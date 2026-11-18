@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>초등학교 특별실 예약 시스템</title>
+  <!-- Supabase JS v2 CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-soft: #eff6ff;
+      --danger: #dc2626;
+      --danger-soft: #fef2f2;
+      --success: #059669;
+      --success-soft: #ecfdf5;
+      --warning-bg: #fffbeb;
+      --warning-border: #fde68a;
+      --warning-text: #92400e;
+      --radius: 16px;
+      --shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 20px 16px 48px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* 헤더 */
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .title-group h1 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .title-group p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #94a3b8;
+    }
+
+    .status-badge.connected .status-dot {
+      background: var(--success);
+    }
+
+    .status-badge.error .status-dot {
+      background: var(--danger);
+    }
+
+    /* 설정 안내 배너 */
+    .config-banner {
+      display: none;
+      background: var(--warning-bg);
+      border: 1px solid var(--warning-border);
+      color: var(--warning-text);
+      padding: 14px 16px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      margin-bottom: 20px;
+    }
+
+    .config-banner.show {
+      display: block;
+    }
+
+    /* Bento Grid 상단 레이아웃 */
+    .top-grid {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+      align-items: start;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px;
+      box-shadow: var(--shadow);
+    }
+
+    .card-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    /* 폼 요소 */
+    .form-grid {
+      display: grid;
+      gap: 13px;
+    }
+
+    .form-row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .form-row-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1.2fr;
+      gap: 10px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.83rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 5px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.93rem;
+      color: var(--text);
+      background: #ffffff;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
+    /* 버튼 */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 12px;
+      color: #ffffff;
+      background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.22);
+      margin-top: 4px;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-outline {
+      background: #ffffff;
+      border-color: var(--border);
+      color: var(--text);
+      padding: 7px 12px;
+      font-size: 0.85rem;
+    }
+
+    .btn-outline:hover {
+      background: #f1f5f9;
+    }
+
+    .btn-danger-soft {
+      background: var(--danger-soft);
+      color: var(--danger);
+      border-color: #fecaca;
+      padding: 6px 11px;
+      font-size: 0.82rem;
+    }
+
+    .btn-danger-soft:hover {
+      background: #fee2e2;
+    }
+
+    /* 주간 시간표 컨트롤 */
+    .timetable-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 14px;
+      padding: 12px;
+      background: var(--bg);
+      border-radius: 12px;
+    }
+
+    .room-selector-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 210px;
+    }
+
+    .room-selector-wrap select {
+      font-weight: 700;
+      padding: 8px 12px;
+    }
+
+    .week-nav {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .week-label {
+      font-size: 0.9rem;
+      font-weight: 700;
+      padding: 0 6px;
+      color: var(--text);
+    }
+
+    /* 시간표 테이블 */
+    .table-scroll {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 600px;
+      background: #ffffff;
+    }
+
+    th, td {
+      border: 1px solid var(--border);
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    .timetable th {
+      background: #f1f5f9;
+      padding: 10px 6px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .timetable th.today-col {
+      background: var(--primary-soft);
+      color: var(--primary);
+    }
+
+    .timetable td.period-col {
+      width: 68px;
+      background: #f8fafc;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      position: sticky;
+      left: 0;
+      z-index: 1;
+    }
+
+    .timetable td.slot-cell {
+      height: 68px;
+      padding: 6px;
+      width: calc((100% - 68px) / 5);
+      transition: background-color 0.12s;
+    }
+
+    .timetable td.slot-cell.empty {
+      cursor: pointer;
+    }
+
+    .timetable td.slot-cell.empty:hover {
+      background: #f8fafc;
+    }
+
+    .empty-hint {
+      font-size: 0.76rem;
+      color: #cbd5e1;
+      user-select: none;
+    }
+
+    .timetable td.slot-cell.empty:hover .empty-hint {
+      color: var(--primary);
+    }
+
+    .slot-booked {
+      background: var(--primary-soft);
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 6px 5px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+    }
+
+    .slot-teacher {
+      font-size: 0.86rem;
+      font-weight: 700;
+      color: #1e3a8a;
+    }
+
+    .slot-meta {
+      font-size: 0.74rem;
+      color: #3b82f6;
+      font-weight: 600;
+    }
+
+    .timetable-tip {
+      margin-top: 8px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    /* 검색 & 예약 목록 */
+    .filter-bar {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr auto;
+      gap: 10px;
+      margin-bottom: 16px;
+      align-items: end;
+    }
+
+    .list-table th {
+      background: #f8fafc;
+      padding: 11px 10px;
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .list-table td {
+      padding: 11px 10px;
+      font-size: 0.9rem;
+    }
+
+    .room-pill {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 6px;
+      background: #f1f5f9;
+      font-weight: 700;
+      font-size: 0.82rem;
+      color: var(--text);
+    }
+
+    .empty-row {
+      padding: 28px 12px !important;
+      color: var(--text-muted);
+      font-size: 0.92rem;
+    }
+
+    /* 토스트 알림 */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #0f172a;
+      color: #ffffff;
+      padding: 12px 18px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.2);
+      opacity: 0;
+      transform: translateY(12px);
+      pointer-events: none;
+      transition: all 0.2s ease;
+      z-index: 100;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* 반응형 (태블릿 & 모바일) */
+    @media (max-width: 960px) {
+      .top-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 14px 10px 40px;
+      }
+
+      .card {
+        padding: 16px;
+      }
+
+      .title-group h1 {
+        font-size: 1.28rem;
+      }
+
+      .form-row-2,
+      .form-row-3 {
+        grid-template-columns: 1fr;
+      }
+
+      .filter-bar {
+        grid-template-columns: 1fr;
+      }
+
+      .timetable-controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .week-nav {
+        justify-content: space-between;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- 상단 헤더 -->
+    <header>
+      <div class="title-group">
+        <h1>🏫 초등학교 특별실 예약 시스템</h1>
+        <p>주간 시간표를 확인하고 특별실 사용 일정을 간편하게 등록하세요.</p>
+      </div>
+      <div id="connection-status" class="status-badge">
+        <span class="status-dot"></span>
+        <span id="connection-text">연결 확인 중...</span>
+      </div>
+    </header>
+
+    <!-- Supabase 키 미설정 안내 -->
+    <div id="config-banner" class="config-banner">
+      ⚠️ <strong>초기 설정 필요:</strong> HTML 파일 상단의 <code>SUPABASE_URL</code>과 <code>SUPABASE_KEY</code>에 본인의 Supabase 프로젝트 값을 입력해 주세요.
+    </div>
+
+    <!-- 상단 Bento 그리드: 예약 등록 + 주간 시간표 -->
+    <div class="top-grid">
+      <!-- 1. 예약 등록 카드 -->
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">📝 특별실 예약 등록</h2>
+        </div>
+
+        <form id="reservation-form" class="form-grid">
+          <div>
+            <label for="reg-room">특별실 선택</label>
+            <select id="reg-room" required>
+              <option value="">특별실을 불러오는 중...</option>
+            </select>
+          </div>
+
+          <div class="form-row-2">
+            <div>
+              <label for="reg-date">예약 날짜</label>
+              <input type="date" id="reg-date" required />
+            </div>
+            <div>
+              <label for="reg-period">교시 (1~6교시)</label>
+              <select id="reg-period" required>
+                <option value="1">1교시</option>
+                <option value="2">2교시</option>
+                <option value="3">3교시</option>
+                <option value="4">4교시</option>
+                <option value="5">5교시</option>
+                <option value="6">6교시</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row-3">
+            <div>
+              <label for="reg-grade">학년</label>
+              <select id="reg-grade" required>
+                <option value="1">1학년</option>
+                <option value="2">2학년</option>
+                <option value="3">3학년</option>
+                <option value="4">4학년</option>
+                <option value="5">5학년</option>
+                <option value="6" selected>6학년</option>
+              </select>
+            </div>
+            <div>
+              <label for="reg-class">반</label>
+              <input type="number" id="reg-class" min="1" max="30" placeholder="예: 2" required />
+            </div>
+            <div>
+              <label for="reg-teacher">교사 이름</label>
+              <input type="text" id="reg-teacher" placeholder="예: 김민수" maxlength="20" required />
+            </div>
+          </div>
+
+          <div>
+            <label for="reg-purpose">사용 목적</label>
+            <input type="text" id="reg-purpose" placeholder="예: 과학 실험, 합창 연습, 코딩 수업" maxlength="60" required />
+          </div>
+
+          <button type="submit" id="submit-btn" class="btn btn-primary">예약 등록하기</button>
+        </form>
+      </section>
+
+      <!-- 2. 주간 시간표 카드 -->
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">📅 주간 특별실 시간표</h2>
+        </div>
+
+        <div class="timetable-controls">
+          <div class="room-selector-wrap">
+            <select id="timetable-room" aria-label="시간표 특별실 선택"></select>
+          </div>
+
+          <div class="week-nav">
+            <button type="button" id="prev-week-btn" class="btn btn-outline">◀ 이전 주</button>
+            <span id="week-range-label" class="week-label"></span>
+            <button type="button" id="today-week-btn" class="btn btn-outline">이번 주</button>
+            <button type="button" id="next-week-btn" class="btn btn-outline">다음 주 ▶</button>
+          </div>
+        </div>
+
+        <div class="table-scroll">
+          <table class="timetable">
+            <thead>
+              <tr id="timetable-head-row">
+                <th>교시</th>
+                <th>월</th>
+                <th>화</th>
+                <th>수</th>
+                <th>목</th>
+                <th>금</th>
+              </tr>
+            </thead>
+            <tbody id="timetable-body">
+              <tr>
+                <td colspan="6" class="empty-row">시간표를 불러오는 중입니다...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="timetable-tip">💡 비어 있는 칸을 클릭하면 해당 특별실·날짜·교시가 예약 등록 양식에 자동으로 입력됩니다.</p>
+      </section>
+    </div>
+
+    <!-- 3. 예약 검색 및 목록 카드 -->
+    <section class="card">
+      <div class="card-header">
+        <h2 class="card-title">🔍 예약 현황 검색 및 취소</h2>
+        <span id="reservation-count" style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">총 0건</span>
+      </div>
+
+      <div class="filter-bar">
+        <div>
+          <label for="filter-teacher">교사 이름 검색</label>
+          <input type="text" id="filter-teacher" placeholder="교사 이름 입력..." />
+        </div>
+        <div>
+          <label for="filter-room">특별실 필터</label>
+          <select id="filter-room">
+            <option value="">전체 특별실</option>
+          </select>
+        </div>
+        <div>
+          <label for="filter-date">날짜 필터</label>
+          <input type="date" id="filter-date" />
+        </div>
+        <div>
+          <button type="button" id="reset-filter-btn" class="btn btn-outline" style="width: 100%; padding: 10px 14px;">필터 초기화</button>
+        </div>
+      </div>
+
+      <div class="table-scroll">
+        <table class="list-table">
+          <thead>
+            <tr>
+              <th>날짜</th>
+              <th>교시</th>
+              <th>특별실</th>
+              <th>학년-반</th>
+              <th>교사 이름</th>
+              <th>사용 목적</th>
+              <th>관리</th>
+            </tr>
+          </thead>
+          <tbody id="reservation-list-body">
+            <tr>
+              <td colspan="7" class="empty-row">예약 목록을 불러오는 중입니다...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <!-- 하단 알림 토스트 -->
+  <div id="toast" class="toast"></div>
+
+  <script>
+    // =========================================================================
+    // [설정] 아래 두 상수에 본인의 Supabase URL과 Publishable Key를 붙여 넣으세요.
+    // =========================================================================
+    const SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co';
+    const SUPABASE_KEY = 'YOUR_SUPABASE_PUBLISHABLE_KEY';
+    // =========================================================================
+
+    // 전역 상태 관리
+    let supabaseClient = null;
+    let roomsList = [];
+    let allReservations = [];
+    let currentMonday = getMonday(new Date());
+
+    // DOM 요소 참조
+    const statusBadge = document.getElementById('connection-status');
+    const statusText = document.getElementById('connection-text');
+    const configBanner = document.getElementById('config-banner');
+
+    const regRoomSelect = document.getElementById('reg-room');
+    const regDateInput = document.getElementById('reg-date');
+    const regPeriodSelect = document.getElementById('reg-period');
+    const regGradeSelect = document.getElementById('reg-grade');
+    const regClassInput = document.getElementById('reg-class');
+    const regTeacherInput = document.getElementById('reg-teacher');
+    const regPurposeInput = document.getElementById('reg-purpose');
+    const reservationForm = document.getElementById('reservation-form');
+    const submitBtn = document.getElementById('submit-btn');
+
+    const timetableRoomSelect = document.getElementById('timetable-room');
+    const weekRangeLabel = document.getElementById('week-range-label');
+    const timetableHeadRow = document.getElementById('timetable-head-row');
+    const timetableBody = document.getElementById('timetable-body');
+
+    const filterTeacherInput = document.getElementById('filter-teacher');
+    const filterRoomSelect = document.getElementById('filter-room');
+    const filterDateInput = document.getElementById('filter-date');
+    const resetFilterBtn = document.getElementById('reset-filter-btn');
+    const reservationListBody = document.getElementById('reservation-list-body');
+    const reservationCount = document.getElementById('reservation-count');
+
+    // 유틸리티: 로컬 기준 YYYY-MM-DD 포맷 (UTC 시차 오류 방지)
+    function formatDateLocal(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    // 유틸리티: YYYY-MM-DD 문자열을 로컬 Date 객체로 변환
+    function parseLocalDate(dateStr) {
+      const [y, m, d] = dateStr.split('-').map(Number);
+      return new Date(y, m - 1, d);
+    }
+
+    // 유틸리티: 해당 날짜가 속한 주의 월요일 구하기
+    function getMonday(date) {
+      const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const day = d.getDay(); // 0: 일, 1: 월 ... 6: 토
+      const diff = day === 0 ? -6 : 1 - day;
+      d.setDate(d.getDate() + diff);
+      return d;
+    }
+
+    // 유틸리티: 요일 한글 표시 (예: 2026-11-18 (수))
+    function formatDateWithDay(dateStr) {
+      const days = ['일', '월', '화', '수', '목', '금', '토'];
+      const d = parseLocalDate(dateStr);
+      return `${dateStr} (${days[d.getDay()]})`;
+    }
+
+    // 유틸리티: XSS 방지용 HTML 이스케이프
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // 유틸리티: 하단 토스트 메시지
+    let toastTimer = null;
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2800);
+    }
+
+    // Supabase 클라이언트 초기화
+    function initSupabase() {
+      const isPlaceholder =
+        !SUPABASE_URL ||
+        !SUPABASE_KEY ||
+        SUPABASE_URL.includes('YOUR_PROJECT_ID') ||
+        SUPABASE_KEY.includes('YOUR_SUPABASE_PUBLISHABLE_KEY');
+
+      if (isPlaceholder) {
+        configBanner.classList.add('show');
+        statusBadge.classList.add('error');
+        statusText.textContent = 'Supabase 키 미설정';
+        return false;
+      }
+
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      return true;
+    }
+
+    // 1. 특별실 목록 불러오기
+    async function loadRooms() {
+      const { data, error } = await supabaseClient
+        .from('rooms')
+        .select('id, name, location')
+        .order('id', { ascending: true });
+
+      if (error) {
+        throw error;
+      }
+
+      roomsList = data || [];
+
+      // 예약 등록 드롭다운 채우기
+      regRoomSelect.innerHTML = roomsList
+        .map(room => `<option value="${room.id}">${escapeHtml(room.name)} (${escapeHtml(room.location)})</option>`)
+        .join('');
+
+      // 주간 시간표 드롭다운 채우기
+      const prevSelectedTimetableRoom = timetableRoomSelect.value;
+      timetableRoomSelect.innerHTML = roomsList
+        .map(room => `<option value="${room.id}">🏫 ${escapeHtml(room.name)} (${escapeHtml(room.location)})</option>`)
+        .join('');
+
+      if (prevSelectedTimetableRoom && roomsList.some(r => String(r.id) === prevSelectedTimetableRoom)) {
+        timetableRoomSelect.value = prevSelectedTimetableRoom;
+      }
+
+      // 검색 필터 드롭다운 채우기
+      const prevFilterRoom = filterRoomSelect.value;
+      filterRoomSelect.innerHTML =
+        `<option value="">전체 특별실</option>` +
+        roomsList
+          .map(room => `<option value="${room.id}">${escapeHtml(room.name)}</option>`)
+          .join('');
+
+      if (prevFilterRoom) {
+        filterRoomSelect.value = prevFilterRoom;
+      }
+    }
+
+    // 2. 전체 예약 데이터 불러오기
+    async function loadReservations() {
+      const { data, error } = await supabaseClient
+        .from('reservations')
+        .select('id, room_id, reservation_date, period, teacher_name, grade, class_num, purpose, created_at')
+        .order('reservation_date', { ascending: false })
+        .order('period', { ascending: true });
+
+      if (error) {
+        throw error;
+      }
+
+      allReservations = data || [];
+    }
+
+    // 전체 데이터 새로 고침 및 화면 다시 그리기
+    async function refreshAllData() {
+      await loadReservations();
+      renderTimetable();
+      renderReservationList();
+    }
+
+    // 3. 주간 시간표 렌더링 (월~금 × 1~6교시)
+    function renderTimetable() {
+      const selectedRoomId = Number(timetableRoomSelect.value);
+      const dayNames = ['월', '화', '수', '목', '금'];
+      const todayStr = formatDateLocal(new Date());
+
+      // 월~금 5일 날짜 배열 생성
+      const weekDates = [];
+      for (let i = 0; i < 5; i++) {
+        const d = new Date(currentMonday);
+        d.setDate(currentMonday.getDate() + i);
+        weekDates.push({
+          dateStr: formatDateLocal(d),
+          label: `${dayNames[i]} (${d.getMonth() + 1}/${d.getDate()})`
+        });
+      }
+
+      // 상단 주차 범위 라벨 업데이트
+      const mon = weekDates[0].dateStr;
+      const fri = weekDates[4].dateStr;
+      weekRangeLabel.textContent = `${mon} ~ ${fri}`;
+
+      // 헤더 렌더링 (오늘 날짜 강조)
+      timetableHeadRow.innerHTML =
+        `<th>교시</th>` +
+        weekDates
+          .map(
+            item =>
+              `<th class="${item.dateStr === todayStr ? 'today-col' : ''}">${item.label}</th>`
+          )
+          .join('');
+
+      // 현재 선택된 특별실 + 해당 주간 예약 필터링
+      const weekDateSet = new Set(weekDates.map(w => w.dateStr));
+      const weekReservations = allReservations.filter(
+        r => r.room_id === selectedRoomId && weekDateSet.has(r.reservation_date)
+      );
+
+      // 빠른 조회용 맵: "YYYY-MM-DD_period" -> reservation
+      const slotMap = new Map();
+      weekReservations.forEach(r => {
+        slotMap.set(`${r.reservation_date}_${r.period}`, r);
+      });
+
+      // 1~6교시 행 생성
+      let bodyHtml = '';
+      for (let period = 1; period <= 6; period++) {
+        bodyHtml += `<tr>`;
+        bodyHtml += `<td class="period-col">${period}교시</td>`;
+
+        for (let dayIdx = 0; dayIdx < 5; dayIdx++) {
+          const dateStr = weekDates[dayIdx].dateStr;
+          const booking = slotMap.get(`${dateStr}_${period}`);
+
+          if (booking) {
+            bodyHtml += `
+              <td class="slot-cell">
+                <div class="slot-booked" title="${escapeHtml(booking.grade)}학년 ${escapeHtml(booking.class_num)}반 · ${escapeHtml(booking.purpose)}">
+                  <span class="slot-teacher">${escapeHtml(booking.teacher_name)}</span>
+                  <span class="slot-meta">${escapeHtml(booking.grade)}-${escapeHtml(booking.class_num)} · ${escapeHtml(booking.purpose)}</span>
+                </div>
+              </td>
+            `;
+          } else {
+            bodyHtml += `
+              <td class="slot-cell empty" data-date="${dateStr}" data-period="${period}" title="클릭하여 예약 입력">
+                <span class="empty-hint">+ 예약</span>
+              </td>
+            `;
+          }
+        }
+        bodyHtml += `</tr>`;
+      }
+
+      timetableBody.innerHTML = bodyHtml;
+
+      // 빈 칸 클릭 시 예약 등록 폼 자동 채우기 이벤트 연결
+      timetableBody.querySelectorAll('.slot-cell.empty').forEach(cell => {
+        cell.addEventListener('click', () => {
+          regRoomSelect.value = String(selectedRoomId);
+          regDateInput.value = cell.dataset.date;
+          regPeriodSelect.value = cell.dataset.period;
+          regTeacherInput.focus();
+          showToast(`${cell.dataset.date} ${cell.dataset.period}교시가 선택되었습니다.`);
+        });
+      });
+    }
+
+    // 4. 예약 검색 및 목록 렌더링
+    function renderReservationList() {
+      const teacherKeyword = filterTeacherInput.value.trim().toLowerCase();
+      const roomFilter = filterRoomSelect.value;
+      const dateFilter = filterDateInput.value;
+
+      const roomNameMap = new Map(roomsList.map(r => [r.id, r.name]));
+
+      const filtered = allReservations.filter(item => {
+        const matchTeacher =
+          !teacherKeyword || item.teacher_name.toLowerCase().includes(teacherKeyword);
+        const matchRoom =
+          !roomFilter || String(item.room_id) === roomFilter;
+        const matchDate =
+          !dateFilter || item.reservation_date === dateFilter;
+        return matchTeacher && matchRoom && matchDate;
+      });
+
+      reservationCount.textContent = `총 ${filtered.length}건`;
+
+      if (filtered.length === 0) {
+        reservationListBody.innerHTML = `
+          <tr>
+            <td colspan="7" class="empty-row">조건에 맞는 예약 내역이 없습니다.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      reservationListBody.innerHTML = filtered
+        .map(item => {
+          const roomName = roomNameMap.get(item.room_id) || '알 수 없음';
+          return `
+            <tr>
+              <td>${escapeHtml(formatDateWithDay(item.reservation_date))}</td>
+              <td><strong>${escapeHtml(item.period)}교시</strong></td>
+              <td><span class="room-pill">${escapeHtml(roomName)}</span></td>
+              <td>${escapeHtml(item.grade)}학년 ${escapeHtml(item.class_num)}반</td>
+              <td><strong>${escapeHtml(item.teacher_name)}</strong></td>
+              <td style="text-align: left;">${escapeHtml(item.purpose)}</td>
+              <td>
+                <button
+                  type="button"
+                  class="btn btn-danger-soft cancel-btn"
+                  data-id="${item.id}"
+                  data-info="${escapeHtml(item.reservation_date)} ${escapeHtml(item.period)}교시 ${escapeHtml(roomName)} (${escapeHtml(item.teacher_name)} 선생님)"
+                >
+                  취소
+                </button>
+              </td>
+            </tr>
+          `;
+        })
+        .join('');
+
+      // 취소 버튼 이벤트 연결
+      reservationListBody.querySelectorAll('.cancel-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          handleCancelReservation(Number(btn.dataset.id), btn.dataset.info);
+        });
+      });
+    }
+
+    // 5. 예약 등록 처리 (23505 중복 오류 처리 포함)
+    async function handleCreateReservation(event) {
+      event.preventDefault();
+      if (!supabaseClient) {
+        alert('먼저 HTML 상단에 SUPABASE_URL과 SUPABASE_KEY를 입력해 주세요.');
+        return;
+      }
+
+      const roomId = Number(regRoomSelect.value);
+      const reservationDate = regDateInput.value;
+      const period = Number(regPeriodSelect.value);
+      const grade = Number(regGradeSelect.value);
+      const classNum = Number(regClassInput.value);
+      const teacherName = regTeacherInput.value.trim();
+      const purpose = regPurposeInput.value.trim();
+
+      if (!roomId || !reservationDate || !period || !grade || !classNum || !teacherName || !purpose) {
+        alert('모든 항목을 입력해 주세요.');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = '저장 중...';
+
+      try {
+        const { error } = await supabaseClient.from('reservations').insert([
+          {
+            room_id: roomId,
+            reservation_date: reservationDate,
+            period: period,
+            teacher_name: teacherName,
+            grade: grade,
+            class_num: classNum,
+            purpose: purpose
+          }
+        ]);
+
+        if (error) {
+          // 같은 특별실·날짜·교시 중복 예약(unique 제약 위반) 처리
+          if (error.code === '23505') {
+            alert('이미 예약된 시간입니다');
+            await refreshAllData();
+            return;
+          }
+          throw error;
+        }
+
+        // 등록된 특별실과 해당 주차로 시간표 뷰 이동
+        timetableRoomSelect.value = String(roomId);
+        currentMonday = getMonday(parseLocalDate(reservationDate));
+
+        // 입력칸 일부 초기화 (날짜·학년·반·교사 이름은 연속 등록 편의를 위해 유지 가능, 사용 목적만 비움)
+        regPurposeInput.value = '';
+
+        await refreshAllData();
+        showToast('✅ 예약이 등록되었습니다.');
+      } catch (err) {
+        console.error('예약 등록 오류:', err);
+        alert(`예약 등록 중 오류가 발생했습니다.\n(${err.message || '알 수 없는 오류'})`);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '예약 등록하기';
+      }
+    }
+
+    // 6. 예약 취소(삭제) 처리
+    async function handleCancelReservation(reservationId, summaryText) {
+      const confirmed = confirm(`다음 예약을 취소하시겠습니까?\n\n• ${summaryText}`);
+      if (!confirmed) return;
+
+      try {
+        const { error } = await supabaseClient
+          .from('reservations')
+          .delete()
+          .eq('id', reservationId);
+
+        if (error) {
+          throw error;
+        }
+
+        await refreshAllData();
+        showToast('🗑️ 예약이 취소되었습니다.');
+      } catch (err) {
+        console.error('예약 삭제 오류:', err);
+        alert(`예약 취소 중 오류가 발생했습니다.\n(${err.message || '알 수 없는 오류'})`);
+      }
+    }
+
+    // 이벤트 리스너 등록
+    function bindEvents() {
+      reservationForm.addEventListener('submit', handleCreateReservation);
+
+      timetableRoomSelect.addEventListener('change', renderTimetable);
+
+      document.getElementById('prev-week-btn').addEventListener('click', () => {
+        currentMonday.setDate(currentMonday.getDate() - 7);
+        renderTimetable();
+      });
+
+      document.getElementById('next-week-btn').addEventListener('click', () => {
+        currentMonday.setDate(currentMonday.getDate() + 7);
+        renderTimetable();
+      });
+
+      document.getElementById('today-week-btn').addEventListener('click', () => {
+        currentMonday = getMonday(new Date());
+        renderTimetable();
+      });
+
+      filterTeacherInput.addEventListener('input', renderReservationList);
+      filterRoomSelect.addEventListener('change', renderReservationList);
+      filterDateInput.addEventListener('change', renderReservationList);
+
+      resetFilterBtn.addEventListener('click', () => {
+        filterTeacherInput.value = '';
+        filterRoomSelect.value = '';
+        filterDateInput.value = '';
+        renderReservationList();
+      });
+    }
+
+    // 앱 시작
+    async function initApp() {
+      // 기본 날짜를 오늘로 설정
+      regDateInput.value = formatDateLocal(new Date());
+      bindEvents();
+
+      if (!initSupabase()) {
+        timetableBody.innerHTML = `<tr><td colspan="6" class="empty-row">Supabase 키를 설정하면 시간표가 표시됩니다.</td></tr>`;
+        reservationListBody.innerHTML = `<tr><td colspan="7" class="empty-row">Supabase 키를 설정하면 예약 목록이 표시됩니다.</td></tr>`;
+        return;
+      }
+
+      try {
+        await loadRooms();
+        await refreshAllData();
+        statusBadge.classList.add('connected');
+        statusText.textContent = 'Supabase 연결됨';
+      } catch (err) {
+        console.error('초기 데이터 로딩 오류:', err);
+        statusBadge.classList.add('error');
+        statusText.textContent = '연결 오류';
+        alert(`데이터를 불러오지 못했습니다. Supabase URL, Key 및 RLS 정책을 확인해 주세요.\n(${err.message || ''})`);
+      }
+    }
+
+    initApp();
+  </script>
+</body>
+</html>
